@@ -41,6 +41,9 @@ class BaiduPan(object):
     def __getBdstoken(self,source):
         # source = self.w.get(link,headers=self.headers,cookies=self.Cookies).text
         return string_middle('bdstoken":"','"',source)
+    def __getShareid(self,source):
+        return string_middle('shareid":"','"',source)
+
     def transfer(self,bdlink,code=None):
         obj = self.w.get(bdlink,headers=self.headers,cookies=self.Cookies)
         bdstoken = self.__getBdstoken(source=obj.text)
@@ -52,7 +55,12 @@ class BaiduPan(object):
                 print("Get bdstoken Failed.")
                 return False
             surl = bdlink[bdlink.find("s/1")+3:]
-            result = self.w.get(self.share_verify_api%(surl,int(time.time()),bdstoken,self.__getLogid()))
+            data = {
+                "pwd" : code,
+                "vcode" :"",
+                "vcode_str":""
+            }
+            result = self.w.post(self.share_verify_api%(surl,int(time.time()),bdstoken,self.__getLogid()),headers=self.headers,cookies=self.Cookies,data=data)
             r2 = json.loads(result)
             if "randsk" not in r2:
                 print("Get Randsk Faild.")
