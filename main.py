@@ -1,8 +1,17 @@
+#python3
+#author: 9bie
+#blog: http://9bie.org
+
 #coding:utf-8
 import requests
 import execjs
 import json
 import time
+#python3
+from urllib.parse import quote
+
+#python2
+#import urllib
 def string_middle(start_str, end, html):
     try:
         start = html.find(start_str)
@@ -29,6 +38,8 @@ class BaiduPan(object):
 
 
         self.share_verify_api="https://pan.baidu.com/share/verify?surl=%s&t=%s&channel=chunlei&web=1&app_id=250528&bdstoken=%s&logid=%s=&clienttype=0"
+        self.transfer_api = "https://pan.baidu.com/share/transfer?shareid=%s&from=%s&channel=chunlei&web=1&app_id=250528&bdstoken=%s&logid=%s&clienttype=0"
+
     def __getLogid(self):
         jsfunc='''var i = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/~£¡@#£¤%¡­¡­&", a = String.fromCharCode,o = function (e){if (e.length < 2) {var r = e.charCodeAt(0);return 128 > r ? e : 2048 > r ? a(192 | r >>> 6) + a(128 | 63 & r) : a(224 | r >>> 12 & 15) + a(128 | r >>> 6 & 63) + a(128 | 63 & r)}var r = 65536 + 1024 * (e.charCodeAt(0) - 55296) + (e.charCodeAt(1) - 56320);return a(240 | r >>> 18 & 7) + a(128 | r >>> 12 & 63)+ a(128 | r >>> 6 & 63) + a(128 | 63 & r)},u = /[\uD800-\uDBFF][\uDC00-\uDFFFF]|[^\x00-\x7F]/g, c = function (e){return (e +""+Math.random()).replace(u, o)}, l = function (e) {var r = [0, 2, 1][e.length % 3],t = e.charCodeAt(0) << 16 | (e.length > 1 ? e.charCodeAt(1) : 0) << 8 | (e.length > 2 ? e.charCodeAt(2) : 0),n = [i.charAt(t >>> 18), i.charAt(t >>> 12 & 63), r >= 2 ? "=" : i.charAt(t >>> 6 & 63), r >= 1 ? "=" : i.charAt(63 & t)];return n.join("")}, p = function (e) {return e.replace(/[\s\S]{1,3}/g, l)}, d = function () {return p(c((new Date).getTime()))}, g = function (e, r) {return r ? d(String(e)).replace(/[+\/]/g, function (e) {return "+" == e ? "-" : "_"}).replace(/=/g, "") : d(String(e))};'''
         ctx = execjs.compile(jsfunc)
@@ -38,13 +49,15 @@ class BaiduPan(object):
         # gugugu~
     def login(self,user,passwd):
         pass
-    def __getBdstoken(self,source):
-        # source = self.w.get(link,headers=self.headers,cookies=self.Cookies).text
-        return string_middle('bdstoken":"','"',source)
-    def __getShareid(self,source):
-        return string_middle('shareid":"','"',source)
+    def __getShareuk(self,source):return string_middle('uk":','"',source)
+    def __getFsidlist(self,source):return string_middle('fs_id":','"',source)
+    def __getBdstoken(self,source):return string_middle('bdstoken":"','"',source)
+    def __getShareid(self,source):return string_middle('shareid":"','"',source)
 
-    def transfer(self,bdlink,code=None):
+    def transfer(self,bdlink,code=None,path="/"):
+        if not self.logind:
+            print("Please login.")
+            return False
         obj = self.w.get(bdlink,headers=self.headers,cookies=self.Cookies)
         bdstoken = self.__getBdstoken(source=obj.text)
         if obj.status_code == 302 and not code:
@@ -61,9 +74,30 @@ class BaiduPan(object):
                 "vcode_str":""
             }
             result = self.w.post(self.share_verify_api%(surl,int(time.time()),bdstoken,self.__getLogid()),headers=self.headers,cookies=self.Cookies,data=data)
-            r2 = json.loads(result)
+            r2 = json.loads(result.text)
             if "randsk" not in r2:
                 print("Get Randsk Faild.")
                 return False
             self.Cookies["SCRC"] = r2["randsk"]
             # Verify Sussfully
+        obj = self.w.get(bdlink, headers=self.headers, cookies=self.Cookies)
+        fsidlist=self.__getFsidlist(obj.text)
+        shareid=self.__getShareid(obj.text)
+        formid=self.__getShareuk(obj.text)
+        data = {
+            "fsidlist":quote("[%s]"%fsidlist),
+            "path":quote(path)
+        }
+        result = self.w.post(self.transfer_api%(shareid,formid,bdstoken,self.__getLogid()),data=data,headers=self.headers,cookies=self.Cookies)
+        r2 = json.loads(result.text)
+        if "error" not in r2:
+            print("Unknow Error.")
+            return False
+        else:
+            if r2["error"] == "0":
+                print("Transfer Successfully")
+                return True
+            else:
+                print("Transfer Faild.")
+                print(result.text)
+                return False
