@@ -12,7 +12,9 @@ baidu = nsrac.BaiduPan(Cookies={
 #如果Cookies留空，请使用如下调用(还未实现)
 #baidu.login(user,passwd)
 
-baidu.transfer("https://pan.baidu.com/s/xxxxx",code="")
+
+baidu.create_floder("文件夹名字")
+baidu.transfer("https://pan.baidu.com/s/xxxxx",code="",path="文件夹名字")
 ```
 
 ## 注意

@@ -8,7 +8,7 @@ import execjs
 import json
 import time
 #python3
-# from urllib.parse import quote
+from urllib.parse import quote
 
 #python2
 #import urllib
@@ -75,6 +75,13 @@ class BaiduPan(object):
                          "&app_id=250528" \
                          "&bdstoken=%s" \
                          "&logid=%s&clienttype=0"
+        self.crete_folder_api ="https://pan.baidu.com/api/create?a=commit" \
+                               "&channel=chunlei" \
+                               "&web=1" \
+                               "&app_id=250528" \
+                               "&bdstoken=%s" \
+                               "&logid=%s" \
+                               "&clienttype=0"
     def __errnoList(self,errno):
         errno_list = {
             0: "成功",
@@ -144,6 +151,11 @@ class BaiduPan(object):
         ctx = execjs.compile(jsfunc.read())
         jsfunc.close()
         return ctx.call('g',"baiduid")
+    def __verifyVersion(self,source):
+        if "啊哦，你来晚了".encode("utf-8") in source:
+            return False
+        else:
+            return True
     def __verifyIsLogin(self):
         ret = self.w.get("https://passport.baidu.com/center")
         if "修改头像".encode("utf-8") not in ret.content:
@@ -186,6 +198,22 @@ class BaiduPan(object):
     def __getFsidlist(self,source):return string_middle('"fs_id":',',',source)
     def __getBdstoken(self,source):return string_middle('bdstoken":"','"',source)
     def __getShareid(self,source):return string_middle('"shareid":',',',source)
+    def create_folder(self,path):
+        logid = self.__getLogid()
+        bdstoken = self.__getBdstoken(self.w.get("https://pan.baidu.com").text)
+        self.w.headers.update({"referer":"https://pan.baidu.com/disk/home?errno=0&errmsg=Auth%20Login%20Sucess&&bduss=&ssnerror=0&traceid="})
+        r = self.w.post(self.crete_folder_api%(bdstoken,logid),data="path=%2F"+quote(path)+"&isdir=1")
+        r2=json.loads(r.text)
+        if "errno" not in r2:
+            print("Unknow Error")
+            return False
+        else:
+            ok, msg = self.__errnoList(r2["errno"])
+            if ok:
+                print(msg)
+            else:
+                print(msg)
+                print(r.text)
 
     def transfer(self,bdlink,code=None,path="/"):
         if not self.logind:
@@ -196,6 +224,9 @@ class BaiduPan(object):
         bdstoken = self.__getBdstoken(source=obj.text)
         if obj.status_code == 302 and not code or "请输入提取码".encode("utf-8") in obj.content and not code:
             print("Need Code.")
+            return False
+        elif self.__verifyVersion(obj.content) == False:
+            print("资源失效。")
             return False
         elif "请输入提取码".encode("utf-8") in obj.content and code:
             if not bdstoken:
@@ -237,7 +268,7 @@ class BaiduPan(object):
         #     "fsidlist": [int(fsidlist)],
         #     "path": '/'
         # }
-        result = self.w.post(self.transfer_api%(shareid,formid,bdstoken,logid),data="fsidlist=%5B"+fsidlist+"%5D&path=%2F")
+        result = self.w.post(self.transfer_api%(shareid,formid,bdstoken,logid),data="fsidlist=%5B"+fsidlist+"%5D&path="+quote(path))
         r2 = json.loads(result.text)
         if "errno" not in r2:
             print("Unknow Error.")
@@ -252,8 +283,9 @@ class BaiduPan(object):
                 print(result.text)
 if __name__=="__main__":
     a = BaiduPan({
-        "BAIDUID":"F8FD5DB49833DA95FC8EDB8B22092848:FG=1",
-        "BDUSS":"FRYTXFQaGowUjVBcmRmVWNBV1hLUVU2M09YcnVYZkw0Rkt3eXRjUW1aM35hbEJjQVFBQUFBJCQAAAAAAAAAAAEAAACAhFIh49~R7gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP~dKFz~3Shce",
-        "STOKEN":"1136cd700f7005b14425121c233138466ead1163bb2c143c3a61e49214ce7e1c"
+        "BAIDUID":":FG=1",
+        "BDUSS":"~",
+        "STOKEN":""
     })
-    a.transfer("https://pan.baidu.com/s/1xJ-A651ih8SQFxvZJRkBMQ",code="59n8")
+    # a.create_folder("lalala")
+    # a.transfer("https://pan.baidu.com/s/1xJ-A651ih8SQFxvZJRkBMQ",code="59n8")
