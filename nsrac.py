@@ -146,8 +146,10 @@ class BaiduPan(object):
         return ctx.call('g',"baiduid")
     def __verifyIsLogin(self):
         ret = self.w.get("https://passport.baidu.com/center")
-        open("temp.html", "wb").write(ret.content)
-        self.logind=True
+        if "修改头像".encode("utf-8") not in ret.content:
+            print("登陆失败，请检查Cookies或者使用Login方法登陆。")
+        else:
+            self.logind=True
         # gugugu~
     def login(self,user,passwd):
         # 还未完成
@@ -249,4 +251,9 @@ class BaiduPan(object):
                 print(msg)
                 print(result.text)
 if __name__=="__main__":
-    a = BaiduPan()
+    a = BaiduPan({
+        "BAIDUID":"F8FD5DB49833DA95FC8EDB8B22092848:FG=1",
+        "BDUSS":"FRYTXFQaGowUjVBcmRmVWNBV1hLUVU2M09YcnVYZkw0Rkt3eXRjUW1aM35hbEJjQVFBQUFBJCQAAAAAAAAAAAEAAACAhFIh49~R7gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP~dKFz~3Shce",
+        "STOKEN":"1136cd700f7005b14425121c233138466ead1163bb2c143c3a61e49214ce7e1c"
+    })
+    a.transfer("https://pan.baidu.com/s/1xJ-A651ih8SQFxvZJRkBMQ",code="59n8")
