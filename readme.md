@@ -1,4 +1,4 @@
-# NSRAC 百度网盘自动转存
+# NSRAC 自动转存百度网盘
 ## 如何使用
 
 执行`pip install -r requirements.txt` 安装所需依赖。
@@ -21,3 +21,8 @@ baidu.transfer("https://pan.baidu.com/s/xxxxx",code="")
 ## python2?
 
 理论上支持，没试过
+
+## Other
+
+selenium版本可以参考jiting的版本:[SRAC][https://github.com/jitingcn/SRAC]
+后续还会添加相关爬虫。
